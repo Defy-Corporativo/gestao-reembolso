@@ -80,7 +80,7 @@ export const paymentService = {
             .from('rebl_payment_items')
             .select(`
                 id,
-                rebl_requests(id, expense_date, amount, description, receipt_path)
+                rebl_requests(id, expense_date, amount, description, receipt_paths)
             `)
             .eq('payment_id', paymentId);
 

@@ -306,7 +306,7 @@ CREATE TABLE public.rebl_requests (
   expense_date date NOT NULL,
   amount numeric(12,2) NOT NULL,
   description text NOT NULL,
-  receipt_path text NOT NULL,
+  receipt_paths text NOT NULL DEFAULT '[]',
   status text NOT NULL DEFAULT 'pendente'::text CHECK (status = ANY (ARRAY['pendente'::text, 'aprovado'::text, 'reembolsado'::text, 'rejeitado'::text])),
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),

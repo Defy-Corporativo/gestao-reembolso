@@ -2,12 +2,13 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useReembolso } from '../../contexts/ReembolsoContext';
 import { requestService } from '../../services/requestService';
-import { X, Camera, Upload } from 'lucide-react';
+import { X, Camera, FolderOpen, Trash2 } from 'lucide-react';
 import styles from './Reembolso.module.css';
 
 const ReembolsoForm = ({ onClose, onSubmit }) => {
     const { user } = useAuth();
     const { responsible } = useReembolso();
+    const cameraInputRef = useRef(null);
     const fileInputRef = useRef(null);
 
     const [formData, setFormData] = useState({
@@ -15,8 +16,7 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
         amount: '',
         description: '',
     });
-    const [receiptFile, setReceiptFile] = useState(null);
-    const [previewUrl, setPreviewUrl] = useState(null);
+    const [receiptFiles, setReceiptFiles] = useState([]); // Array de { file, previewUrl }
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
 
@@ -24,23 +24,41 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
+    const addFiles = (fileList) => {
+        if (!fileList || fileList.length === 0) return;
+
+        const newFiles = Array.from(fileList).map(file => ({
+            file,
+            previewUrl: URL.createObjectURL(file),
+        }));
+
+        setReceiptFiles(prev => [...prev, ...newFiles]);
+    };
+
+    const removeFile = (index) => {
+        setReceiptFiles(prev => {
+            const updated = [...prev];
+            URL.revokeObjectURL(updated[index].previewUrl);
+            updated.splice(index, 1);
+            return updated;
+        });
+    };
+
+    const handleCameraCapture = (e) => {
+        addFiles(e.target.files);
+        // Reset input para permitir tirar outra foto em sequência
+        e.target.value = '';
+    };
+
     const handleFileSelect = (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setReceiptFile(file);
-
-        // Gerar preview
-        const reader = new FileReader();
-        reader.onload = () => setPreviewUrl(reader.result);
-        reader.readAsDataURL(file);
+        addFiles(e.target.files);
+        e.target.value = '';
     };
 
     const handleSubmit = async () => {
         try {
             setError(null);
 
-            // Validações
             if (!formData.expenseDate) {
                 setError('Informe a data do gasto.');
                 return;
@@ -53,14 +71,13 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
                 setError('Informe a descrição do gasto.');
                 return;
             }
-            if (!receiptFile) {
-                setError('Envie a foto do comprovante.');
+            if (receiptFiles.length === 0) {
+                setError('Envie pelo menos uma foto do comprovante.');
                 return;
             }
 
             setSaving(true);
 
-            // Extrair nome do usuário Azure (parte antes do @)
             const userName = user.email.split('@')[0];
 
             await requestService.createRequest({
@@ -68,7 +85,7 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
                 expenseDate: formData.expenseDate,
                 amount: formData.amount,
                 description: formData.description,
-                receiptFile,
+                receiptFiles: receiptFiles.map(rf => rf.file),
                 userName,
             });
 
@@ -142,42 +159,71 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
                     </div>
 
                     <div className="input-group">
-                        <label className="label">Comprovante *</label>
+                        <label className="label">
+                            Comprovantes * {receiptFiles.length > 0 && <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>({receiptFiles.length} foto{receiptFiles.length !== 1 ? 's' : ''})</span>}
+                        </label>
+
+                        {/* Inputs ocultos */}
+                        <input
+                            type="file"
+                            ref={cameraInputRef}
+                            accept="image/*"
+                            capture="environment"
+                            onChange={handleCameraCapture}
+                            style={{ display: 'none' }}
+                        />
                         <input
                             type="file"
                             ref={fileInputRef}
-                            accept="image/*"
-                            capture="environment"
+                            accept="image/*,.pdf"
+                            multiple
                             onChange={handleFileSelect}
                             style={{ display: 'none' }}
                         />
-                        <div
-                            className={`${styles.fileUploadArea} ${receiptFile ? styles.hasFile : ''}`}
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            {previewUrl ? (
-                                <>
-                                    <img src={previewUrl} alt="Preview" className={styles.imagePreview} />
-                                    <p className={styles.fileUploadText} style={{ marginTop: '8px' }}>
-                                        {receiptFile.name}
-                                    </p>
-                                    <p className={styles.fileUploadHint}>Toque para trocar</p>
-                                </>
-                            ) : (
-                                <>
-                                    <div className={styles.fileUploadIcon}>
-                                        <Camera size={32} />
-                                    </div>
-                                    <p className={styles.fileUploadText}>
-                                        Tire uma foto ou selecione um arquivo
-                                    </p>
-                                    <p className={styles.fileUploadHint}>
-                                        <Upload size={12} style={{ display: 'inline', marginRight: '4px' }} />
-                                        JPG, PNG ou PDF
-                                    </p>
-                                </>
-                            )}
+
+                        {/* Botões de ação */}
+                        <div className={styles.uploadActions}>
+                            <button
+                                type="button"
+                                className={styles.uploadActionBtn}
+                                onClick={() => cameraInputRef.current?.click()}
+                            >
+                                <Camera size={20} />
+                                <span>Tirar Foto</span>
+                            </button>
+                            <button
+                                type="button"
+                                className={styles.uploadActionBtn}
+                                onClick={() => fileInputRef.current?.click()}
+                            >
+                                <FolderOpen size={20} />
+                                <span>Selecionar Arquivo</span>
+                            </button>
                         </div>
+
+                        {/* Grid de previews */}
+                        {receiptFiles.length > 0 && (
+                            <div className={styles.previewGrid}>
+                                {receiptFiles.map((rf, index) => (
+                                    <div key={index} className={styles.previewItem}>
+                                        <img
+                                            src={rf.previewUrl}
+                                            alt={`Comprovante ${index + 1}`}
+                                            className={styles.previewImage}
+                                        />
+                                        <button
+                                            type="button"
+                                            className={styles.previewRemoveBtn}
+                                            onClick={() => removeFile(index)}
+                                            title="Remover"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                        <span className={styles.previewIndex}>{index + 1}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
 

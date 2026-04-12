@@ -235,22 +235,29 @@ const GestaoFinanceira = () => {
                                                     <td>{req.description}</td>
                                                     <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(req.amount)}</td>
                                                     <td style={{ textAlign: 'center' }}>
-                                                        {req.receipt_path && (
-                                                            <button
-                                                                className={styles.downloadBtn}
-                                                                title="Baixar comprovante"
-                                                                onClick={async (e) => {
-                                                                    e.stopPropagation();
-                                                                    try {
-                                                                        await storageService.downloadReceipt(req.receipt_path);
-                                                                    } catch (err) {
-                                                                        console.error('Erro ao baixar:', err);
-                                                                    }
-                                                                }}
-                                                            >
-                                                                <Download size={16} />
-                                                            </button>
-                                                        )}
+                                                        {(() => {
+                                                            let paths = [];
+                                                            try { paths = JSON.parse(req.receipt_paths || '[]'); } catch { paths = req.receipt_paths ? [req.receipt_paths] : []; }
+                                                            return paths.length > 0 && (
+                                                                <button
+                                                                    className={styles.downloadBtn}
+                                                                    title={`Baixar ${paths.length} comprovante(s)`}
+                                                                    onClick={async (e) => {
+                                                                        e.stopPropagation();
+                                                                        try {
+                                                                            for (const p of paths) {
+                                                                                await storageService.downloadReceipt(p);
+                                                                            }
+                                                                        } catch (err) {
+                                                                            console.error('Erro ao baixar:', err);
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    <Download size={16} />
+                                                                    {paths.length > 1 && <span style={{ fontSize: '11px' }}>{paths.length}</span>}
+                                                                </button>
+                                                            );
+                                                        })()}
                                                     </td>
                                                 </tr>
                                             ))}

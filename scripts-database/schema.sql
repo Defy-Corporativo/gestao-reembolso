@@ -99,7 +99,7 @@ CREATE TABLE rebl_requests (
   expense_date date NOT NULL,
   amount decimal(12, 2) NOT NULL,
   description text NOT NULL,
-  receipt_path text NOT NULL,
+  receipt_paths text NOT NULL DEFAULT '[]',
   status text NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente', 'aprovado', 'reembolsado', 'rejeitado')),
   created_at timestamptz DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at timestamptz DEFAULT timezone('utc'::text, now()) NOT NULL

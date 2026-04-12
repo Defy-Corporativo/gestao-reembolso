@@ -45,12 +45,16 @@ export const requestService = {
     },
 
     // Cria uma nova solicitação de reembolso
-    async createRequest({ responsibleId, expenseDate, amount, description, receiptFile, userName }) {
+    async createRequest({ responsibleId, expenseDate, amount, description, receiptFiles, userName }) {
         // 1. Buscar ou criar ciclo aberto
         const cycle = await cycleService.getOrCreateCurrentCycle();
 
-        // 2. Upload do comprovante
-        const receiptPath = await storageService.uploadReceipt(receiptFile, userName);
+        // 2. Upload de todos os comprovantes
+        const receiptPaths = [];
+        for (const file of receiptFiles) {
+            const path = await storageService.uploadReceipt(file, userName);
+            receiptPaths.push(path);
+        }
 
         // 3. Criar a solicitação
         const { data, error } = await supabase
@@ -61,7 +65,7 @@ export const requestService = {
                 expense_date: expenseDate,
                 amount: parseFloat(amount),
                 description: description.trim(),
-                receipt_path: receiptPath,
+                receipt_paths: JSON.stringify(receiptPaths),
                 status: 'pendente',
             })
             .select()
