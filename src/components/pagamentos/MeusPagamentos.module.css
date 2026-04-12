@@ -1,0 +1,21 @@
+.pageWrapper { width: 100%; max-width: 800px; margin: 0 auto; }
+.paymentList { display: flex; flex-direction: column; gap: 12px; }
+.paymentCard { background: var(--bg-secondary); border: 1px solid var(--border-color-light); border-radius: var(--border-radius-md); padding: 16px; transition: all var(--transition-base); }
+.paymentCard:hover { box-shadow: var(--shadow-md); }
+.paymentHeader { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.paymentDate { font-size: 16px; font-weight: 600; color: var(--text-primary); margin: 0; }
+.paymentCycle { font-size: 13px; color: var(--text-tertiary); margin: 2px 0 0; }
+.paymentAmount { font-size: 18px; font-weight: 700; color: #059669; }
+.paymentMeta { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--border-color-light); }
+.metaItem { font-size: 13px; color: var(--text-tertiary); }
+.metaLabel { font-weight: 600; color: var(--text-secondary); }
+.emptyState { text-align: center; padding: 48px 24px; color: var(--text-tertiary); }
+.emptyIcon { width: 64px; height: 64px; background: var(--bg-hover); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--text-tertiary); }
+.emptyState h3 { font-size: 18px; font-weight: 600; color: var(--text-secondary); margin: 0 0 8px; }
+.emptyState p { font-size: 14px; margin: 0; }
+@media (max-width: 768px) {
+    .pageWrapper { max-width: 100%; }
+    .paymentHeader { flex-direction: column; gap: 4px; }
+    .paymentAmount { font-size: 16px; }
+    .paymentMeta { flex-direction: column; gap: 6px; }
+}

@@ -1,0 +1,183 @@
+.pageWrapper {
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.cycleList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.cycleCard {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    transition: all var(--transition-base);
+}
+
+.cycleCard:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.cycleCardHeader {
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+}
+
+.cycleCardLeft {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cycleIcon {
+    width: 40px;
+    height: 40px;
+    background: var(--bg-hover);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary);
+}
+
+.cycleMonth {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.cycleSubtext {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin: 0;
+}
+
+.cycleAmount {
+    font-size: 16px;
+    font-weight: 700;
+    color: #059669;
+    text-align: right;
+}
+
+.cycleAmountLabel {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-weight: 400;
+    display: block;
+}
+
+.chevron {
+    color: var(--text-tertiary);
+    transition: transform var(--transition-base);
+}
+
+.chevronOpen {
+    transform: rotate(180deg);
+}
+
+.cycleCardBody {
+    border-top: 1px solid var(--border-color-light);
+    padding: 16px;
+}
+
+.requestItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color-light);
+}
+
+.requestItem:last-child {
+    border-bottom: none;
+}
+
+.requestItemLeft {
+    flex: 1;
+    min-width: 0;
+}
+
+.requestItemDesc {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.requestItemDate {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin: 2px 0 0;
+}
+
+.requestItemAmount {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    margin-left: 12px;
+}
+
+.emptyState {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-tertiary);
+}
+
+.emptyIcon {
+    width: 64px;
+    height: 64px;
+    background: var(--bg-hover);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    color: var(--text-tertiary);
+}
+
+.emptyState h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin: 0 0 8px;
+}
+
+.emptyState p {
+    font-size: 14px;
+    margin: 0;
+}
+
+@media (max-width: 768px) {
+    .pageWrapper {
+        max-width: 100%;
+    }
+
+    .cycleCardHeader {
+        padding: 14px;
+    }
+
+    .cycleMonth {
+        font-size: 15px;
+    }
+
+    .cycleAmount {
+        font-size: 14px;
+    }
+
+    .cycleCardBody {
+        padding: 12px;
+    }
+}
