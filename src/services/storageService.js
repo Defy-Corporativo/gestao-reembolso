@@ -2,6 +2,12 @@ import { supabase } from './supabaseClient';
 
 const BUCKET_NAME = 'rebl_receipts';
 
+// Verifica se um caminho/nome de arquivo é PDF
+export const isPdfFile = (path) => {
+    if (!path) return false;
+    return path.toLowerCase().endsWith('.pdf');
+};
+
 export const storageService = {
     // Upload de comprovante seguindo o padrão: reembolso-NOMEUSUARIOAZURE-AAAAMMDDHHMMSS-SEQ
     // sequentialIndex: número sequencial do anexo dentro da solicitação (1, 2, 3...)

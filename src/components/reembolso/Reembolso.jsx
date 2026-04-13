@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useReembolso } from '../../contexts/ReembolsoContext';
 import { requestService } from '../../services/requestService';
 import { storageService } from '../../services/storageService';
-import { Receipt, Plus, ImageIcon, CalendarDays, Download, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { isPdfFile } from '../../services/storageService';
+import { Receipt, Plus, ImageIcon, FileText, CalendarDays, Download, ExternalLink, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import ReembolsoForm from './ReembolsoForm';
 import styles from './Reembolso.module.css';
 
@@ -99,6 +100,15 @@ const Reembolso = () => {
         setViewer({ paths, urls, currentIndex: 0 });
     };
 
+    // Verifica se o item atual do viewer é PDF
+    const isCurrentPdf = viewer && isPdfFile(viewer.paths[viewer.currentIndex]);
+
+    const openInNewTab = (e) => {
+        e.stopPropagation();
+        if (!viewer) return;
+        window.open(viewer.urls[viewer.currentIndex], '_blank');
+    };
+
     const navigateViewer = (dir, e) => {
         e.stopPropagation();
         setViewer(prev => {
@@ -190,11 +200,18 @@ const Reembolso = () => {
                         {requests.map(req => {
                             const urls = receiptUrls[req.id] || [];
                             const paths = parseReceiptPaths(req.receipt_paths);
+                            const firstIsPdf = paths.length > 0 && isPdfFile(paths[0]);
                             return (
                                 <div key={req.id} className={styles.requestCard} onClick={() => openViewer(req)}>
                                     {urls.length > 0 ? (
                                         <div className={styles.receiptThumbWrapper}>
-                                            <img src={urls[0]} alt="Comprovante" className={styles.receiptThumb} />
+                                            {firstIsPdf ? (
+                                                <div className={styles.receiptThumbPdf}>
+                                                    <FileText size={22} />
+                                                </div>
+                                            ) : (
+                                                <img src={urls[0]} alt="Comprovante" className={styles.receiptThumb} />
+                                            )}
                                             {paths.length > 1 && (
                                                 <span className={styles.receiptThumbCount}>{paths.length}</span>
                                             )}
@@ -246,7 +263,17 @@ const Reembolso = () => {
                         </button>
                     )}
 
-                    <img src={viewer.urls[viewer.currentIndex]} alt="Comprovante" className={styles.receiptViewerImg} />
+                    {isCurrentPdf ? (
+                        <div className={styles.pdfViewerContainer} onClick={e => e.stopPropagation()}>
+                            <iframe
+                                src={viewer.urls[viewer.currentIndex]}
+                                title="Comprovante PDF"
+                                className={styles.pdfViewerFrame}
+                            />
+                        </div>
+                    ) : (
+                        <img src={viewer.urls[viewer.currentIndex]} alt="Comprovante" className={styles.receiptViewerImg} />
+                    )}
 
                     {viewer.urls.length > 1 && viewer.currentIndex < viewer.urls.length - 1 && (
                         <button className={`${styles.viewerNavBtn} ${styles.viewerNavRight}`} onClick={(e) => navigateViewer(1, e)}>
@@ -259,6 +286,12 @@ const Reembolso = () => {
                             <span className={styles.viewerCounter}>
                                 {viewer.currentIndex + 1} / {viewer.urls.length}
                             </span>
+                        )}
+                        {isCurrentPdf && (
+                            <button className={styles.receiptOpenBtn} onClick={openInNewTab}>
+                                <ExternalLink size={18} />
+                                Abrir
+                            </button>
                         )}
                         <button className={styles.receiptDownloadBtn} onClick={downloadCurrent}>
                             <Download size={18} />

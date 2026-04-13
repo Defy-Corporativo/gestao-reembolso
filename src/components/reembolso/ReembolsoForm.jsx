@@ -2,14 +2,19 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useReembolso } from '../../contexts/ReembolsoContext';
 import { requestService } from '../../services/requestService';
-import { X, Camera, FolderOpen, Trash2 } from 'lucide-react';
+import { X, Camera, Image, FileText, Trash2 } from 'lucide-react';
 import styles from './Reembolso.module.css';
+
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+const ACCEPTED_PDF_TYPE = 'application/pdf';
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 const ReembolsoForm = ({ onClose, onSubmit }) => {
     const { user } = useAuth();
     const { responsible } = useReembolso();
     const cameraInputRef = useRef(null);
     const fileInputRef = useRef(null);
+    const pdfInputRef = useRef(null);
 
     const [formData, setFormData] = useState({
         expenseDate: '',
@@ -27,18 +32,39 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
     const addFiles = (fileList) => {
         if (!fileList || fileList.length === 0) return;
 
-        const newFiles = Array.from(fileList).map(file => ({
-            file,
-            previewUrl: URL.createObjectURL(file),
-        }));
+        const validFiles = [];
+        for (const file of Array.from(fileList)) {
+            // Validação de tipo
+            const isImage = ACCEPTED_IMAGE_TYPES.includes(file.type) || file.type.startsWith('image/');
+            const isPdf = file.type === ACCEPTED_PDF_TYPE;
+            if (!isImage && !isPdf) {
+                setError(`Arquivo "${file.name}" não é um formato suportado. Use imagens ou PDF.`);
+                continue;
+            }
+            // Validação de tamanho
+            if (file.size > MAX_FILE_SIZE) {
+                setError(`Arquivo "${file.name}" excede o limite de 20MB.`);
+                continue;
+            }
+            validFiles.push({
+                file,
+                isPdf,
+                fileName: file.name,
+                previewUrl: isPdf ? null : URL.createObjectURL(file),
+            });
+        }
 
-        setReceiptFiles(prev => [...prev, ...newFiles]);
+        if (validFiles.length > 0) {
+            setReceiptFiles(prev => [...prev, ...validFiles]);
+        }
     };
 
     const removeFile = (index) => {
         setReceiptFiles(prev => {
             const updated = [...prev];
-            URL.revokeObjectURL(updated[index].previewUrl);
+            if (updated[index].previewUrl) {
+                URL.revokeObjectURL(updated[index].previewUrl);
+            }
             updated.splice(index, 1);
             return updated;
         });
@@ -50,7 +76,12 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
         e.target.value = '';
     };
 
-    const handleFileSelect = (e) => {
+    const handleImageSelect = (e) => {
+        addFiles(e.target.files);
+        e.target.value = '';
+    };
+
+    const handlePdfSelect = (e) => {
         addFiles(e.target.files);
         e.target.value = '';
     };
@@ -72,7 +103,7 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
                 return;
             }
             if (receiptFiles.length === 0) {
-                setError('Envie pelo menos uma foto do comprovante.');
+                setError('Envie pelo menos um comprovante (foto ou PDF).');
                 return;
             }
 
@@ -160,7 +191,7 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
 
                     <div className="input-group">
                         <label className="label">
-                            Comprovantes * {receiptFiles.length > 0 && <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>({receiptFiles.length} foto{receiptFiles.length !== 1 ? 's' : ''})</span>}
+                            Comprovantes * {receiptFiles.length > 0 && <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>({receiptFiles.length} arquivo{receiptFiles.length !== 1 ? 's' : ''})</span>}
                         </label>
 
                         {/* Inputs ocultos */}
@@ -175,9 +206,17 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
                         <input
                             type="file"
                             ref={fileInputRef}
-                            accept="image/*,.pdf"
+                            accept="image/*"
                             multiple
-                            onChange={handleFileSelect}
+                            onChange={handleImageSelect}
+                            style={{ display: 'none' }}
+                        />
+                        <input
+                            type="file"
+                            ref={pdfInputRef}
+                            accept=".pdf,application/pdf"
+                            multiple
+                            onChange={handlePdfSelect}
                             style={{ display: 'none' }}
                         />
 
@@ -189,15 +228,23 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
                                 onClick={() => cameraInputRef.current?.click()}
                             >
                                 <Camera size={20} />
-                                <span>Tirar Foto</span>
+                                <span>Câmera</span>
                             </button>
                             <button
                                 type="button"
                                 className={styles.uploadActionBtn}
                                 onClick={() => fileInputRef.current?.click()}
                             >
-                                <FolderOpen size={20} />
-                                <span>Selecionar Arquivo</span>
+                                <Image size={20} />
+                                <span>Imagem</span>
+                            </button>
+                            <button
+                                type="button"
+                                className={styles.uploadActionBtn}
+                                onClick={() => pdfInputRef.current?.click()}
+                            >
+                                <FileText size={20} />
+                                <span>PDF</span>
                             </button>
                         </div>
 
@@ -206,11 +253,22 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
                             <div className={styles.previewGrid}>
                                 {receiptFiles.map((rf, index) => (
                                     <div key={index} className={styles.previewItem}>
-                                        <img
-                                            src={rf.previewUrl}
-                                            alt={`Comprovante ${index + 1}`}
-                                            className={styles.previewImage}
-                                        />
+                                        {rf.isPdf ? (
+                                            <div className={styles.previewPdf}>
+                                                <FileText size={24} />
+                                                <span className={styles.previewPdfName}>
+                                                    {rf.fileName.length > 12
+                                                        ? rf.fileName.substring(0, 10) + '…'
+                                                        : rf.fileName}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <img
+                                                src={rf.previewUrl}
+                                                alt={`Comprovante ${index + 1}`}
+                                                className={styles.previewImage}
+                                            />
+                                        )}
                                         <button
                                             type="button"
                                             className={styles.previewRemoveBtn}
