@@ -14,6 +14,7 @@ const PagamentoForm = ({ cycleId, responsibleId, responsibleName, requestIds, to
         paymentDate: new Date().toISOString().split('T')[0],
         totalAmount: totalAmount.toFixed(2),
         transactionCode: '',
+        paymentReceiptText: '',
     });
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
@@ -47,6 +48,7 @@ const PagamentoForm = ({ cycleId, responsibleId, responsibleName, requestIds, to
                 paymentDate: formData.paymentDate,
                 totalAmount: formData.totalAmount,
                 transactionCode: formData.transactionCode,
+                paymentReceiptText: formData.paymentReceiptText,
                 createdBy: responsible.id,
                 requestIds,
             });
@@ -130,6 +132,18 @@ const PagamentoForm = ({ cycleId, responsibleId, responsibleName, requestIds, to
                             placeholder="Ex: código Pix, ID da transferência..."
                             value={formData.transactionCode}
                             onChange={e => handleChange('transactionCode', e.target.value)}
+                        />
+                    </div>
+
+                    <div className="input-group">
+                        <label className="label">Comprovante de Pagamento</label>
+                        <textarea
+                            className="input"
+                            placeholder="Cole aqui o texto do comprovante (Pix, transferência, etc.)..."
+                            value={formData.paymentReceiptText}
+                            onChange={e => handleChange('paymentReceiptText', e.target.value)}
+                            rows={4}
+                            style={{ resize: 'vertical', minHeight: '96px', maxHeight: '200px', overflowY: 'auto' }}
                         />
                     </div>
                 </div>

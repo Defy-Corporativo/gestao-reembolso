@@ -1,7 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useReembolso } from '../../contexts/ReembolsoContext';
 import { requestService } from '../../services/requestService';
+import { storageService } from '../../services/storageService';
+import { isPdfFile } from '../../services/storageService';
 import { X, Camera, Image, FileText, Trash2 } from 'lucide-react';
 import styles from './Reembolso.module.css';
 
@@ -9,21 +11,76 @@ const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/he
 const ACCEPTED_PDF_TYPE = 'application/pdf';
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
-const ReembolsoForm = ({ onClose, onSubmit }) => {
+// Parseia receipt_paths (JSON array ou string legado)
+const parseReceiptPaths = (val) => {
+    if (!val) return [];
+    try {
+        const parsed = JSON.parse(val);
+        return Array.isArray(parsed) ? parsed : [val];
+    } catch {
+        return val ? [val] : [];
+    }
+};
+
+/**
+ * ReembolsoForm — usado para criar e editar solicitações de reembolso.
+ * 
+ * Props:
+ *   onClose()   — fechar o modal
+ *   onSubmit()  — callback após salvar
+ *   editingRequest — (opcional) objeto da solicitação a editar (modo edição)
+ */
+const ReembolsoForm = ({ onClose, onSubmit, editingRequest }) => {
     const { user } = useAuth();
     const { responsible } = useReembolso();
     const cameraInputRef = useRef(null);
     const fileInputRef = useRef(null);
     const pdfInputRef = useRef(null);
 
+    const isEditing = !!editingRequest;
+
     const [formData, setFormData] = useState({
         expenseDate: '',
         amount: '',
         description: '',
     });
-    const [receiptFiles, setReceiptFiles] = useState([]); // Array de { file, previewUrl }
+    // Comprovantes existentes no storage (modo edição): { storagePath, isPdf, previewUrl }
+    const [existingReceipts, setExistingReceipts] = useState([]);
+    // Novos arquivos selecionados pelo usuário: { file, isPdf, fileName, previewUrl }
+    const [newFiles, setNewFiles] = useState([]);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
+    const [loadingExisting, setLoadingExisting] = useState(false);
+
+    // Carregar dados da solicitação em modo edição
+    useEffect(() => {
+        if (!editingRequest) return;
+
+        setFormData({
+            expenseDate: editingRequest.expense_date || '',
+            amount: String(editingRequest.amount || ''),
+            description: editingRequest.description || '',
+        });
+
+        // Carregar previews dos comprovantes existentes
+        const paths = parseReceiptPaths(editingRequest.receipt_paths);
+        if (paths.length > 0) {
+            setLoadingExisting(true);
+            Promise.all(
+                paths.map(async (p) => {
+                    try {
+                        const url = await storageService.getReceiptUrl(p);
+                        return { storagePath: p, isPdf: isPdfFile(p), previewUrl: url };
+                    } catch {
+                        return { storagePath: p, isPdf: isPdfFile(p), previewUrl: null };
+                    }
+                })
+            ).then(results => {
+                setExistingReceipts(results);
+                setLoadingExisting(false);
+            });
+        }
+    }, [editingRequest]);
 
     const handleChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -34,14 +91,12 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
 
         const validFiles = [];
         for (const file of Array.from(fileList)) {
-            // Validação de tipo
             const isImage = ACCEPTED_IMAGE_TYPES.includes(file.type) || file.type.startsWith('image/');
             const isPdf = file.type === ACCEPTED_PDF_TYPE;
             if (!isImage && !isPdf) {
                 setError(`Arquivo "${file.name}" não é um formato suportado. Use imagens ou PDF.`);
                 continue;
             }
-            // Validação de tamanho
             if (file.size > MAX_FILE_SIZE) {
                 setError(`Arquivo "${file.name}" excede o limite de 20MB.`);
                 continue;
@@ -55,12 +110,27 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
         }
 
         if (validFiles.length > 0) {
-            setReceiptFiles(prev => [...prev, ...validFiles]);
+            setNewFiles(prev => [...prev, ...validFiles]);
         }
     };
 
-    const removeFile = (index) => {
-        setReceiptFiles(prev => {
+    const removeExistingReceipt = async (index) => {
+        const receipt = existingReceipts[index];
+        // Remove do storage imediatamente
+        try {
+            await storageService.deleteReceipt(receipt.storagePath);
+        } catch (err) {
+            console.error('Erro ao remover comprovante do storage:', err);
+        }
+        setExistingReceipts(prev => {
+            const updated = [...prev];
+            updated.splice(index, 1);
+            return updated;
+        });
+    };
+
+    const removeNewFile = (index) => {
+        setNewFiles(prev => {
             const updated = [...prev];
             if (updated[index].previewUrl) {
                 URL.revokeObjectURL(updated[index].previewUrl);
@@ -72,7 +142,6 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
 
     const handleCameraCapture = (e) => {
         addFiles(e.target.files);
-        // Reset input para permitir tirar outra foto em sequência
         e.target.value = '';
     };
 
@@ -85,6 +154,8 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
         addFiles(e.target.files);
         e.target.value = '';
     };
+
+    const totalAttachments = existingReceipts.length + newFiles.length;
 
     const handleSubmit = async () => {
         try {
@@ -102,7 +173,7 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
                 setError('Informe a descrição do gasto.');
                 return;
             }
-            if (receiptFiles.length === 0) {
+            if (totalAttachments === 0) {
                 setError('Envie pelo menos um comprovante (foto ou PDF).');
                 return;
             }
@@ -111,14 +182,28 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
 
             const userName = user.email.split('@')[0];
 
-            await requestService.createRequest({
-                responsibleId: responsible.id,
-                expenseDate: formData.expenseDate,
-                amount: formData.amount,
-                description: formData.description,
-                receiptFiles: receiptFiles.map(rf => rf.file),
-                userName,
-            });
+            if (isEditing) {
+                // Modo edição: atualizar solicitação existente
+                await requestService.updateRequest({
+                    requestId: editingRequest.id,
+                    expenseDate: formData.expenseDate,
+                    amount: formData.amount,
+                    description: formData.description,
+                    existingPaths: existingReceipts.map(r => r.storagePath),
+                    newFiles: newFiles.map(nf => nf.file),
+                    userName,
+                });
+            } else {
+                // Modo criação: criar nova solicitação
+                await requestService.createRequest({
+                    responsibleId: responsible.id,
+                    expenseDate: formData.expenseDate,
+                    amount: formData.amount,
+                    description: formData.description,
+                    receiptFiles: newFiles.map(nf => nf.file),
+                    userName,
+                });
+            }
 
             onSubmit();
         } catch (err) {
@@ -133,7 +218,7 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
         <div className={styles.formOverlay} onClick={onClose}>
             <div className={styles.formModal} onClick={e => e.stopPropagation()}>
                 <div className={styles.formHeader}>
-                    <h3>Nova Solicitação</h3>
+                    <h3>{isEditing ? 'Editar Solicitação' : 'Nova Solicitação'}</h3>
                     <button className={styles.formCloseBtn} onClick={onClose}>
                         <X size={20} />
                     </button>
@@ -191,7 +276,7 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
 
                     <div className="input-group">
                         <label className="label">
-                            Comprovantes * {receiptFiles.length > 0 && <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>({receiptFiles.length} arquivo{receiptFiles.length !== 1 ? 's' : ''})</span>}
+                            Comprovantes * {totalAttachments > 0 && <span style={{ fontWeight: 400, color: 'var(--text-tertiary)' }}>({totalAttachments} arquivo{totalAttachments !== 1 ? 's' : ''})</span>}
                         </label>
 
                         {/* Inputs ocultos */}
@@ -249,22 +334,29 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
                         </div>
 
                         {/* Grid de previews */}
-                        {receiptFiles.length > 0 && (
+                        {loadingExisting && (
+                            <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginTop: '10px' }}>
+                                Carregando comprovantes existentes...
+                            </p>
+                        )}
+
+                        {totalAttachments > 0 && (
                             <div className={styles.previewGrid}>
-                                {receiptFiles.map((rf, index) => (
-                                    <div key={index} className={styles.previewItem}>
-                                        {rf.isPdf ? (
+                                {/* Comprovantes existentes (já salvos no storage) */}
+                                {existingReceipts.map((er, index) => (
+                                    <div key={`existing-${index}`} className={styles.previewItem}>
+                                        {er.isPdf ? (
                                             <div className={styles.previewPdf}>
                                                 <FileText size={24} />
                                                 <span className={styles.previewPdfName}>
-                                                    {rf.fileName.length > 12
-                                                        ? rf.fileName.substring(0, 10) + '…'
-                                                        : rf.fileName}
+                                                    {er.storagePath.length > 12
+                                                        ? er.storagePath.substring(0, 10) + '…'
+                                                        : er.storagePath}
                                                 </span>
                                             </div>
                                         ) : (
                                             <img
-                                                src={rf.previewUrl}
+                                                src={er.previewUrl}
                                                 alt={`Comprovante ${index + 1}`}
                                                 className={styles.previewImage}
                                             />
@@ -272,12 +364,43 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
                                         <button
                                             type="button"
                                             className={styles.previewRemoveBtn}
-                                            onClick={() => removeFile(index)}
+                                            onClick={() => removeExistingReceipt(index)}
                                             title="Remover"
                                         >
                                             <Trash2 size={14} />
                                         </button>
                                         <span className={styles.previewIndex}>{index + 1}</span>
+                                    </div>
+                                ))}
+
+                                {/* Novos comprovantes (ainda não salvos) */}
+                                {newFiles.map((nf, index) => (
+                                    <div key={`new-${index}`} className={styles.previewItem}>
+                                        {nf.isPdf ? (
+                                            <div className={styles.previewPdf}>
+                                                <FileText size={24} />
+                                                <span className={styles.previewPdfName}>
+                                                    {nf.fileName.length > 12
+                                                        ? nf.fileName.substring(0, 10) + '…'
+                                                        : nf.fileName}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <img
+                                                src={nf.previewUrl}
+                                                alt={`Novo comprovante ${index + 1}`}
+                                                className={styles.previewImage}
+                                            />
+                                        )}
+                                        <button
+                                            type="button"
+                                            className={styles.previewRemoveBtn}
+                                            onClick={() => removeNewFile(index)}
+                                            title="Remover"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                        <span className={styles.previewIndex}>{existingReceipts.length + index + 1}</span>
                                     </div>
                                 ))}
                             </div>
@@ -290,7 +413,12 @@ const ReembolsoForm = ({ onClose, onSubmit }) => {
                         Cancelar
                     </button>
                     <button className="btn btn-primary" onClick={handleSubmit} disabled={saving}>
-                        {saving ? 'Salvando...' : 'Registrar Reembolso'}
+                        {saving
+                            ? 'Salvando...'
+                            : isEditing
+                                ? 'Salvar Alterações'
+                                : 'Registrar Reembolso'
+                        }
                     </button>
                 </div>
             </div>

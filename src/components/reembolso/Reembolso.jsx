@@ -3,7 +3,7 @@ import { useReembolso } from '../../contexts/ReembolsoContext';
 import { requestService } from '../../services/requestService';
 import { storageService } from '../../services/storageService';
 import { isPdfFile } from '../../services/storageService';
-import { Receipt, Plus, ImageIcon, FileText, CalendarDays, Download, ExternalLink, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Receipt, Plus, ImageIcon, FileText, CalendarDays, Download, ExternalLink, Pencil, Trash2, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import ReembolsoForm from './ReembolsoForm';
 import styles from './Reembolso.module.css';
 
@@ -47,6 +47,9 @@ const Reembolso = () => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showForm, setShowForm] = useState(false);
+    const [editingRequest, setEditingRequest] = useState(null); // Solicitação em edição
+    const [deletingRequest, setDeletingRequest] = useState(null); // Solicitação para confirmar exclusão
+    const [deleting, setDeleting] = useState(false);
     const [receiptUrls, setReceiptUrls] = useState({}); // { reqId: [url1, url2, ...] }
     const [downloading, setDownloading] = useState(false);
 
@@ -89,8 +92,35 @@ const Reembolso = () => {
 
     const handleFormSubmit = async () => {
         setShowForm(false);
+        setEditingRequest(null);
         await refreshCycle();
         await loadRequests();
+    };
+
+    const handleEdit = (req, e) => {
+        e.stopPropagation();
+        setEditingRequest(req);
+        setShowForm(true);
+    };
+
+    const handleDeleteConfirm = (req, e) => {
+        e.stopPropagation();
+        setDeletingRequest(req);
+    };
+
+    const handleDelete = async () => {
+        if (!deletingRequest) return;
+        try {
+            setDeleting(true);
+            await requestService.deleteRequest(deletingRequest.id);
+            setDeletingRequest(null);
+            await loadRequests();
+        } catch (err) {
+            console.error('Erro ao excluir solicitação:', err);
+            alert('Erro ao excluir solicitação. Tente novamente.');
+        } finally {
+            setDeleting(false);
+        }
     };
 
     const openViewer = (req) => {
@@ -227,9 +257,29 @@ const Reembolso = () => {
                                             <span className={styles.requestAmount}>{formatCurrency(req.amount)}</span>
                                         </div>
                                         <p className={styles.requestDate}>{formatDate(req.expense_date)}</p>
-                                        <span className={`${styles.statusBadge} ${statusMap[req.status]?.css || ''}`}>
-                                            {statusMap[req.status]?.label || req.status}
-                                        </span>
+                                        <div className={styles.requestFooter}>
+                                            <span className={`${styles.statusBadge} ${statusMap[req.status]?.css || ''}`}>
+                                                {statusMap[req.status]?.label || req.status}
+                                            </span>
+                                            {req.status === 'pendente' && (
+                                                <div className={styles.requestActions}>
+                                                    <button
+                                                        className={styles.actionBtnEdit}
+                                                        onClick={(e) => handleEdit(req, e)}
+                                                        title="Editar"
+                                                    >
+                                                        <Pencil size={14} />
+                                                    </button>
+                                                    <button
+                                                        className={styles.actionBtnDelete}
+                                                        onClick={(e) => handleDeleteConfirm(req, e)}
+                                                        title="Excluir"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -245,9 +295,36 @@ const Reembolso = () => {
 
             {showForm && (
                 <ReembolsoForm
-                    onClose={() => setShowForm(false)}
+                    onClose={() => { setShowForm(false); setEditingRequest(null); }}
                     onSubmit={handleFormSubmit}
+                    editingRequest={editingRequest}
                 />
+            )}
+
+            {/* Modal de confirmação de exclusão */}
+            {deletingRequest && (
+                <div className={styles.formOverlay} onClick={() => !deleting && setDeletingRequest(null)}>
+                    <div className={styles.deleteModal} onClick={e => e.stopPropagation()}>
+                        <div className={styles.deleteModalIcon}>
+                            <Trash2 size={24} />
+                        </div>
+                        <h3 className={styles.deleteModalTitle}>Excluir Solicitação</h3>
+                        <p className={styles.deleteModalDesc}>
+                            Deseja excluir a solicitação <strong>"{deletingRequest.description}"</strong> no valor de <strong>{formatCurrency(deletingRequest.amount)}</strong>?
+                        </p>
+                        <p className={styles.deleteModalWarn}>
+                            Esta ação não pode ser desfeita. Os comprovantes serão removidos permanentemente.
+                        </p>
+                        <div className={styles.deleteModalActions}>
+                            <button className="btn btn-secondary" onClick={() => setDeletingRequest(null)} disabled={deleting}>
+                                Cancelar
+                            </button>
+                            <button className={styles.deleteConfirmBtn} onClick={handleDelete} disabled={deleting}>
+                                {deleting ? 'Excluindo...' : 'Excluir'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
 
             {/* Viewer fullscreen com navegação */}

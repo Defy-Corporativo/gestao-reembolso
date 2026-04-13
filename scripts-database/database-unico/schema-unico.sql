@@ -321,6 +321,7 @@ CREATE TABLE public.rebl_payments (
   payment_date date NOT NULL,
   total_amount numeric(12,2) NOT NULL,
   transaction_code text NOT NULL,
+  payment_receipt_text text,
   created_by uuid NOT NULL,
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   CONSTRAINT rebl_payments_pkey PRIMARY KEY (id),

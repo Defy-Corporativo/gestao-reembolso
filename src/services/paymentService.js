@@ -2,7 +2,7 @@ import { supabase } from './supabaseClient';
 
 export const paymentService = {
     // Cria pagamento e vincula solicitações selecionadas
-    async createPayment({ cycleId, responsibleId, paymentDate, totalAmount, transactionCode, createdBy, requestIds }) {
+    async createPayment({ cycleId, responsibleId, paymentDate, totalAmount, transactionCode, paymentReceiptText, createdBy, requestIds }) {
         // 1. Criar o pagamento
         const { data: payment, error: paymentError } = await supabase
             .from('rebl_payments')
@@ -12,6 +12,7 @@ export const paymentService = {
                 payment_date: paymentDate,
                 total_amount: parseFloat(totalAmount),
                 transaction_code: transactionCode.trim(),
+                payment_receipt_text: paymentReceiptText?.trim() || null,
                 created_by: createdBy,
             })
             .select()

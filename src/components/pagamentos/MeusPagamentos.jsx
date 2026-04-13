@@ -86,6 +86,12 @@ const MeusPagamentos = () => {
                                     </div>
                                 )}
                             </div>
+                            {payment.payment_receipt_text && (
+                                <div className={styles.receiptTextBox}>
+                                    <span className={styles.metaLabel}>Comprovante:</span>
+                                    <pre className={styles.receiptTextContent}>{payment.payment_receipt_text}</pre>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

@@ -90,8 +90,65 @@ export const requestService = {
         return data;
     },
 
-    // Deleta uma solicitação (somente se pendente)
+    // Atualiza uma solicitação existente (campos + comprovantes novos)
+    // existingPaths: paths já salvos no storage que devem ser mantidos
+    // newFiles: novos arquivos File para upload
+    async updateRequest({ requestId, expenseDate, amount, description, existingPaths, newFiles, userName }) {
+        // 1. Upload de novos comprovantes (índice sequencial continua após os existentes)
+        const newPaths = [];
+        for (let i = 0; i < newFiles.length; i++) {
+            const path = await storageService.uploadReceipt(newFiles[i], userName, existingPaths.length + i + 1);
+            newPaths.push(path);
+        }
+
+        const allPaths = [...existingPaths, ...newPaths];
+
+        // 2. Atualizar a solicitação
+        const { data, error } = await supabase
+            .from('rebl_requests')
+            .update({
+                expense_date: expenseDate,
+                amount: parseFloat(amount),
+                description: description.trim(),
+                receipt_paths: JSON.stringify(allPaths),
+                updated_at: new Date().toISOString(),
+            })
+            .eq('id', requestId)
+            .eq('status', 'pendente') // Só permite editar se pendente
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    // Deleta uma solicitação (somente se pendente) e limpa arquivos do storage
     async deleteRequest(requestId) {
+        // 1. Buscar a solicitação para obter os paths dos comprovantes
+        const { data: req, error: fetchError } = await supabase
+            .from('rebl_requests')
+            .select('receipt_paths')
+            .eq('id', requestId)
+            .eq('status', 'pendente')
+            .single();
+
+        if (fetchError) throw fetchError;
+
+        // 2. Remover arquivos do storage
+        if (req?.receipt_paths) {
+            try {
+                const paths = JSON.parse(req.receipt_paths);
+                if (Array.isArray(paths)) {
+                    for (const p of paths) {
+                        await storageService.deleteReceipt(p).catch(() => {}); // ignora falhas individuais
+                    }
+                }
+            } catch {
+                // receipt_paths pode não ser um JSON válido em dados legados
+            }
+        }
+
+        // 3. Deletar a solicitação
         const { error } = await supabase
             .from('rebl_requests')
             .delete()

@@ -137,6 +137,7 @@ CREATE TABLE rebl_payments (
   payment_date date NOT NULL,
   total_amount decimal(12, 2) NOT NULL,
   transaction_code text NOT NULL,
+  payment_receipt_text text,
   created_by uuid REFERENCES pepl_responsibles(id) ON DELETE SET NULL NOT NULL,
   created_at timestamptz DEFAULT timezone('utc'::text, now()) NOT NULL
 );

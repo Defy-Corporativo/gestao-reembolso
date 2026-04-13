@@ -230,6 +230,143 @@
     color: #059669;
 }
 
+/* Footer do card com badge e ações */
+.requestFooter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 6px;
+}
+
+.requestActions {
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.requestCard:hover .requestActions {
+    opacity: 1;
+}
+
+/* Em mobile, sempre visível */
+@media (hover: none) {
+    .requestActions {
+        opacity: 1;
+    }
+}
+
+.actionBtnEdit,
+.actionBtnDelete {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color-light);
+    background: var(--bg-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    padding: 0;
+}
+
+.actionBtnEdit {
+    color: #2563EB;
+}
+
+.actionBtnEdit:hover {
+    background: #EFF6FF;
+    border-color: #93C5FD;
+    transform: scale(1.1);
+}
+
+.actionBtnDelete {
+    color: #DC2626;
+}
+
+.actionBtnDelete:hover {
+    background: #FEF2F2;
+    border-color: #FCA5A5;
+    transform: scale(1.1);
+}
+
+/* Modal de confirmação de exclusão */
+.deleteModal {
+    background: white;
+    border-radius: var(--border-radius-lg);
+    width: 100%;
+    max-width: 400px;
+    padding: 32px 24px 24px;
+    text-align: center;
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border-color-light);
+    animation: formSlideUp 0.25s ease-out;
+}
+
+.deleteModalIcon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #FEE2E2;
+    color: #DC2626;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+
+.deleteModalTitle {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 12px;
+}
+
+.deleteModalDesc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0 0 8px;
+    line-height: 1.5;
+}
+
+.deleteModalWarn {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin: 0 0 24px;
+}
+
+.deleteModalActions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.deleteConfirmBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 24px;
+    background: #DC2626;
+    color: white;
+    border: none;
+    border-radius: var(--border-radius-md);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    min-height: 40px;
+}
+
+.deleteConfirmBtn:hover {
+    background: #B91C1C;
+}
+
+.deleteConfirmBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 /* Form modal */
 .formOverlay {
     position: fixed;
