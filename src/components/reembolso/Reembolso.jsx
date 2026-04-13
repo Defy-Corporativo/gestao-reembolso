@@ -16,11 +16,11 @@ const formatDate = (dateStr) => {
     return `${d}/${m}/${y}`;
 };
 
-const formatMonth = (ref) => {
-    if (!ref) return '';
-    const [y, m] = ref.split('-');
-    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    return `${months[parseInt(m, 10) - 1]} ${y}`;
+const formatDateShort = (dateStr) => {
+    if (!dateStr) return '';
+    const d = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const [y, m, day] = d.split('-');
+    return `${day}/${m}/${y}`;
 };
 
 // Parseia receipt_paths (JSON array ou string legado)
@@ -164,7 +164,7 @@ const Reembolso = () => {
                         <CalendarDays size={20} />
                     </div>
                     <div className={styles.cycleText}>
-                        <h3>Ciclo Aberto — {formatMonth(openCycle.reference_month)}</h3>
+                        <h3>Ciclo Aberto — desde {formatDateShort(openCycle.opened_date || openCycle.opened_at)}</h3>
                         <p>{requests.length} solicitação(ões) registrada(s)</p>
                     </div>
                 </div>

@@ -13,25 +13,29 @@ export const cycleService = {
         return data;
     },
 
-    // Lista ciclos fechados ordenados por mês de referência (mais recente primeiro)
+    // Lista ciclos fechados ordenados por data de abertura (mais recente primeiro)
     async getClosedCycles() {
         const { data, error } = await supabase
             .from('rebl_cycles')
             .select('*')
             .eq('status', 'fechado')
-            .order('reference_month', { ascending: false });
+            .order('opened_date', { ascending: false });
 
         if (error) throw error;
         return data || [];
     },
 
-    // Cria novo ciclo com o mês de referência atual (YYYY-MM)
+    // Cria novo ciclo com o mês de referência atual (YYYY-MM) e a data de abertura (hoje)
     async createCycle(referenceMonth) {
+        const now = new Date();
+        const openedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
         const { data, error } = await supabase
             .from('rebl_cycles')
             .insert({
                 reference_month: referenceMonth,
                 status: 'aberto',
+                opened_date: openedDate,
             })
             .select()
             .single();
@@ -53,11 +57,13 @@ export const cycleService = {
     },
 
     // Fecha um ciclo (chamado pelo Executivo Financeiro)
-    async closeCycle(cycleId, closedByResponsibleId) {
+    // closedDate: string YYYY-MM-DD informada pelo financeiro (não pode ser futura)
+    async closeCycle(cycleId, closedByResponsibleId, closedDate) {
         const { data, error } = await supabase
             .from('rebl_cycles')
             .update({
                 status: 'fechado',
+                closed_date: closedDate,
                 closed_at: new Date().toISOString(),
                 closed_by: closedByResponsibleId,
                 updated_at: new Date().toISOString(),

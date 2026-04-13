@@ -14,11 +14,11 @@ const formatDate = (dateStr) => {
     return `${d}/${m}/${y}`;
 };
 
-const formatMonth = (ref) => {
-    if (!ref) return '';
-    const [y, m] = ref.split('-');
-    const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    return `${months[parseInt(m, 10) - 1]} ${y}`;
+const formatDateShort = (dateStr) => {
+    if (!dateStr) return '';
+    const d = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const [y, m, day] = d.split('-');
+    return `${day}/${m}/${y}`;
 };
 
 const Historico = () => {
@@ -96,7 +96,11 @@ const Historico = () => {
                                             <History size={20} />
                                         </div>
                                         <div>
-                                            <p className={styles.cycleMonth}>{formatMonth(cycle.reference_month)}</p>
+                                            <p className={styles.cycleMonth}>
+                                                {formatDateShort(cycle.opened_date || cycle.opened_at)}
+                                                {' — '}
+                                                {formatDateShort(cycle.closed_date || cycle.closed_at)}
+                                            </p>
                                             <p className={styles.cycleSubtext}>Ciclo fechado</p>
                                         </div>
                                     </div>

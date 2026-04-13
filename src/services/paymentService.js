@@ -51,7 +51,7 @@ export const paymentService = {
             .from('rebl_payments')
             .select(`
                 *,
-                rebl_cycles(reference_month),
+                rebl_cycles(reference_month, opened_date, closed_date),
                 creator:pepl_responsibles!rebl_payments_created_by_fkey(name)
             `)
             .eq('responsible_id', responsibleId)
@@ -67,7 +67,7 @@ export const paymentService = {
             .from('rebl_payments')
             .select(`
                 *,
-                rebl_cycles(reference_month),
+                rebl_cycles(reference_month, opened_date, closed_date),
                 creator:pepl_responsibles!rebl_payments_created_by_fkey(name)
             `)
             .eq('id', paymentId)

@@ -3,7 +3,7 @@ import { useReembolso } from '../../contexts/ReembolsoContext';
 import { requestService } from '../../services/requestService';
 import { cycleService } from '../../services/cycleService';
 import { storageService } from '../../services/storageService';
-import { DollarSign, Lock, Download } from 'lucide-react';
+import { DollarSign, Lock, Download, Calendar } from 'lucide-react';
 import PagamentoForm from './PagamentoForm';
 import styles from './GestaoFinanceira.module.css';
 
@@ -16,11 +16,12 @@ const formatDate = (dateStr) => {
     return `${d}/${m}/${y}`;
 };
 
-const formatMonth = (ref) => {
-    if (!ref) return '';
-    const [y, m] = ref.split('-');
-    const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-    return `${months[parseInt(m, 10) - 1]} ${y}`;
+const formatDateShort = (dateStr) => {
+    if (!dateStr) return '';
+    // Suporta ISO timestamps e dates simples
+    const d = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const [y, m, day] = d.split('-');
+    return `${day}/${m}/${y}`;
 };
 
 const GestaoFinanceira = () => {
@@ -30,6 +31,11 @@ const GestaoFinanceira = () => {
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [payingPerson, setPayingPerson] = useState(null); // { responsibleId, responsibleName }
     const [filterPerson, setFilterPerson] = useState('all');
+
+    // Estado do modal de fechar ciclo
+    const [showCloseModal, setShowCloseModal] = useState(false);
+    const [closingDate, setClosingDate] = useState('');
+    const [closingLoading, setClosingLoading] = useState(false);
 
     useEffect(() => {
         if (openCycle?.id) loadRequests();
@@ -48,15 +54,40 @@ const GestaoFinanceira = () => {
         }
     };
 
+    const handleOpenCloseModal = () => {
+        // Pré-preenche com a data de hoje
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        setClosingDate(todayStr);
+        setShowCloseModal(true);
+    };
+
     const handleCloseCycle = async () => {
-        if (!confirm('Deseja fechar este ciclo de reembolso? Novas solicitações entrarão em um novo ciclo.')) return;
+        if (!closingDate) {
+            alert('Informe a data de fechamento do ciclo.');
+            return;
+        }
+
+        // Validar que a data não é futura
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const selected = new Date(closingDate + 'T00:00:00');
+        if (selected > today) {
+            alert('A data de fechamento não pode ser maior que a data atual.');
+            return;
+        }
+
         try {
-            await cycleService.closeCycle(openCycle.id, responsible.id);
+            setClosingLoading(true);
+            await cycleService.closeCycle(openCycle.id, responsible.id, closingDate);
+            setShowCloseModal(false);
             await refreshCycle();
             setRequests([]);
         } catch (err) {
             console.error('Erro ao fechar ciclo:', err);
             alert('Erro ao fechar ciclo.');
+        } finally {
+            setClosingLoading(false);
         }
     };
 
@@ -142,6 +173,12 @@ const GestaoFinanceira = () => {
         loadRequests();
     };
 
+    // Data máxima para o input de fechamento (hoje)
+    const todayStr = (() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    })();
+
     return (
         <div className={styles.pageWrapper}>
             <div className="page-header">
@@ -158,9 +195,9 @@ const GestaoFinanceira = () => {
                 <>
                     <div className={styles.closeCycleBar}>
                         <span className={styles.closeCycleText}>
-                            Ciclo aberto: <strong>{formatMonth(openCycle.reference_month)}</strong>
+                            Ciclo aberto desde: <strong>{formatDateShort(openCycle.opened_date || openCycle.opened_at)}</strong>
                         </span>
-                        <button className="btn btn-secondary" onClick={handleCloseCycle} style={{ fontSize: '13px' }}>
+                        <button className="btn btn-secondary" onClick={handleOpenCloseModal} style={{ fontSize: '13px' }}>
                             Fechar Ciclo
                         </button>
                     </div>
@@ -280,6 +317,46 @@ const GestaoFinanceira = () => {
                     onClose={() => setPayingPerson(null)}
                     onSubmit={handlePaymentDone}
                 />
+            )}
+
+            {/* Modal de fechamento do ciclo */}
+            {showCloseModal && (
+                <div className={styles.formOverlay} onClick={() => !closingLoading && setShowCloseModal(false)}>
+                    <div className={styles.formModal} onClick={e => e.stopPropagation()}>
+                        <div className={styles.formHeader}>
+                            <h3>Fechar Ciclo</h3>
+                            <button className={styles.formCloseBtn} onClick={() => !closingLoading && setShowCloseModal(false)}>✕</button>
+                        </div>
+                        <div className={styles.formBody}>
+                            <div className={styles.closeModalInfo}>
+                                <Calendar size={18} />
+                                <span>Ciclo aberto em <strong>{formatDateShort(openCycle.opened_date || openCycle.opened_at)}</strong></span>
+                            </div>
+                            <p className={styles.closeModalDesc}>
+                                Informe a data de fechamento deste ciclo. Novas solicitações entrarão em um novo ciclo.
+                            </p>
+                            <label className={styles.inputLabel}>
+                                Data de fechamento
+                                <input
+                                    type="date"
+                                    className="input"
+                                    value={closingDate}
+                                    onChange={e => setClosingDate(e.target.value)}
+                                    max={todayStr}
+                                    required
+                                />
+                            </label>
+                        </div>
+                        <div className={styles.formFooter}>
+                            <button className="btn btn-secondary" onClick={() => setShowCloseModal(false)} disabled={closingLoading}>
+                                Cancelar
+                            </button>
+                            <button className="btn btn-primary" onClick={handleCloseCycle} disabled={closingLoading}>
+                                {closingLoading ? 'Fechando...' : 'Confirmar Fechamento'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

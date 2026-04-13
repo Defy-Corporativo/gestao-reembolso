@@ -3,8 +3,9 @@ import { supabase } from './supabaseClient';
 const BUCKET_NAME = 'rebl_receipts';
 
 export const storageService = {
-    // Upload de comprovante seguindo o padrão: reembolso-NOMEUSUARIOAZURE-AAAAMMDDHHMMSS
-    async uploadReceipt(file, userName) {
+    // Upload de comprovante seguindo o padrão: reembolso-NOMEUSUARIOAZURE-AAAAMMDDHHMMSS-SEQ
+    // sequentialIndex: número sequencial do anexo dentro da solicitação (1, 2, 3...)
+    async uploadReceipt(file, userName, sequentialIndex = 1) {
         const now = new Date();
         const timestamp = [
             now.getFullYear(),
@@ -23,7 +24,7 @@ export const storageService = {
         // Extrair extensão do arquivo
         const ext = file.name.split('.').pop() || 'jpg';
 
-        const fileName = `reembolso-${normalizedName}-${timestamp}.${ext}`;
+        const fileName = `reembolso-${normalizedName}-${timestamp}-${sequentialIndex}.${ext}`;
 
         const { error } = await supabase.storage
             .from(BUCKET_NAME)

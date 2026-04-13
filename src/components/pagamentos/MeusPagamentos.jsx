@@ -13,11 +13,11 @@ const formatDate = (dateStr) => {
     return `${d}/${m}/${y}`;
 };
 
-const formatMonth = (ref) => {
-    if (!ref) return '';
-    const [y, m] = ref.split('-');
-    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    return `${months[parseInt(m, 10) - 1]} ${y}`;
+const formatDateShort = (dateStr) => {
+    if (!dateStr) return '';
+    const d = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const [y, m, day] = d.split('-');
+    return `${day}/${m}/${y}`;
 };
 
 const MeusPagamentos = () => {
@@ -67,7 +67,7 @@ const MeusPagamentos = () => {
                                         {formatDate(payment.payment_date)}
                                     </p>
                                     <p className={styles.paymentCycle}>
-                                        Ciclo: {formatMonth(payment.rebl_cycles?.reference_month)}
+                                        Ciclo: {formatDateShort(payment.rebl_cycles?.opened_date)} — {formatDateShort(payment.rebl_cycles?.closed_date)}
                                     </p>
                                 </div>
                                 <span className={styles.paymentAmount}>

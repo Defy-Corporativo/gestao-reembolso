@@ -49,10 +49,10 @@ export const requestService = {
         // 1. Buscar ou criar ciclo aberto
         const cycle = await cycleService.getOrCreateCurrentCycle();
 
-        // 2. Upload de todos os comprovantes
+        // 2. Upload de todos os comprovantes (número sequencial começa em 1)
         const receiptPaths = [];
-        for (const file of receiptFiles) {
-            const path = await storageService.uploadReceipt(file, userName);
+        for (let i = 0; i < receiptFiles.length; i++) {
+            const path = await storageService.uploadReceipt(receiptFiles[i], userName, i + 1);
             receiptPaths.push(path);
         }
 
