@@ -9,6 +9,7 @@ import Reembolso from './components/reembolso/Reembolso';
 import Historico from './components/historico/Historico';
 import MeusPagamentos from './components/pagamentos/MeusPagamentos';
 import GestaoFinanceira from './components/gestao/GestaoFinanceira';
+import TiposDespesa from './components/gestao/TiposDespesa';
 
 const LoginRoute = () => {
     const { user } = useAuth();
@@ -35,6 +36,7 @@ function App() {
                         <Route path="historico" element={<Historico />} />
                         <Route path="pagamentos" element={<MeusPagamentos />} />
                         <Route path="gestao" element={<GestaoFinanceira />} />
+                        <Route path="tipos-despesa" element={<TiposDespesa />} />
                     </Route>
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

@@ -7,7 +7,10 @@ export const requestService = {
     async getRequestsByUserAndCycle(responsibleId, cycleId) {
         const { data, error } = await supabase
             .from('rebl_requests')
-            .select('*')
+            .select(`
+                *,
+                rebl_expense_types(id, name)
+            `)
             .eq('responsible_id', responsibleId)
             .eq('cycle_id', cycleId)
             .order('created_at', { ascending: false });
@@ -22,7 +25,8 @@ export const requestService = {
             .from('rebl_requests')
             .select(`
                 *,
-                pepl_responsibles!inner(id, name, email)
+                pepl_responsibles!inner(id, name, email),
+                rebl_expense_types(id, name)
             `)
             .eq('cycle_id', cycleId)
             .order('created_at', { ascending: false });
@@ -45,7 +49,7 @@ export const requestService = {
     },
 
     // Cria uma nova solicitação de reembolso
-    async createRequest({ responsibleId, expenseDate, amount, description, receiptFiles, userName }) {
+    async createRequest({ responsibleId, expenseDate, amount, description, expenseTypeId, receiptFiles, userName }) {
         // 1. Buscar ou criar ciclo aberto
         const cycle = await cycleService.getOrCreateCurrentCycle();
 
@@ -66,6 +70,7 @@ export const requestService = {
                 amount: parseFloat(amount),
                 description: description.trim(),
                 receipt_paths: JSON.stringify(receiptPaths),
+                expense_type_id: expenseTypeId || null,
                 status: 'pendente',
             })
             .select()
@@ -93,7 +98,7 @@ export const requestService = {
     // Atualiza uma solicitação existente (campos + comprovantes novos)
     // existingPaths: paths já salvos no storage que devem ser mantidos
     // newFiles: novos arquivos File para upload
-    async updateRequest({ requestId, expenseDate, amount, description, existingPaths, newFiles, userName }) {
+    async updateRequest({ requestId, expenseDate, amount, description, expenseTypeId, existingPaths, newFiles, userName }) {
         // 1. Upload de novos comprovantes (índice sequencial continua após os existentes)
         const newPaths = [];
         for (let i = 0; i < newFiles.length; i++) {
@@ -111,6 +116,7 @@ export const requestService = {
                 amount: parseFloat(amount),
                 description: description.trim(),
                 receipt_paths: JSON.stringify(allPaths),
+                expense_type_id: expenseTypeId || null,
                 updated_at: new Date().toISOString(),
             })
             .eq('id', requestId)

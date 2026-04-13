@@ -257,6 +257,9 @@ const Reembolso = () => {
                                             <span className={styles.requestAmount}>{formatCurrency(req.amount)}</span>
                                         </div>
                                         <p className={styles.requestDate}>{formatDate(req.expense_date)}</p>
+                                        {req.rebl_expense_types?.name && (
+                                            <span className={styles.expenseTypeBadge}>{req.rebl_expense_types.name}</span>
+                                        )}
                                         <div className={styles.requestFooter}>
                                             <span className={`${styles.statusBadge} ${statusMap[req.status]?.css || ''}`}>
                                                 {statusMap[req.status]?.label || req.status}

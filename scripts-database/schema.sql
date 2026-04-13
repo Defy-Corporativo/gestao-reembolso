@@ -39,6 +39,7 @@ DROP INDEX IF EXISTS idx_rebl_requests_cycle;
 DROP INDEX IF EXISTS idx_rebl_requests_responsible;
 DROP INDEX IF EXISTS idx_rebl_requests_status;
 DROP INDEX IF EXISTS idx_rebl_requests_expense_date;
+DROP INDEX IF EXISTS idx_rebl_expense_types_active;
 DROP INDEX IF EXISTS idx_rebl_cycles_status;
 DROP INDEX IF EXISTS idx_rebl_cycles_reference_month;
 DROP INDEX IF EXISTS idx_rebl_cycles_opened_date;
@@ -49,6 +50,7 @@ DROP INDEX IF EXISTS idx_rebl_cycles_opened_date;
 DROP TABLE IF EXISTS rebl_payment_items CASCADE;
 DROP TABLE IF EXISTS rebl_payments CASCADE;
 DROP TABLE IF EXISTS rebl_requests CASCADE;
+DROP TABLE IF EXISTS rebl_expense_types CASCADE;
 DROP TABLE IF EXISTS rebl_cycles CASCADE;
 
 -- ============================================================
@@ -104,6 +106,20 @@ CREATE INDEX idx_rebl_cycles_reference_month ON rebl_cycles(reference_month);
 CREATE INDEX idx_rebl_cycles_opened_date ON rebl_cycles(opened_date);
 
 -- =============================================
+-- Tabela: Tipos de Despesa (domínio)
+-- Cadastrados pelo Executivo Financeiro.
+-- =============================================
+CREATE TABLE rebl_expense_types (
+  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name text NOT NULL UNIQUE,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamptz DEFAULT timezone('utc'::text, now()) NOT NULL,
+  updated_at timestamptz DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX idx_rebl_expense_types_active ON rebl_expense_types(is_active);
+
+-- =============================================
 -- Tabela: Solicitações de Reembolso
 -- Cada solicitação pertence a um ciclo e a um responsável.
 -- O responsável é sempre o usuário logado.
@@ -116,6 +132,7 @@ CREATE TABLE rebl_requests (
   amount decimal(12, 2) NOT NULL,
   description text NOT NULL,
   receipt_paths text NOT NULL DEFAULT '[]',
+  expense_type_id uuid REFERENCES rebl_expense_types(id) ON DELETE SET NULL,
   status text NOT NULL DEFAULT 'pendente' CHECK (status IN ('pendente', 'aprovado', 'reembolsado', 'rejeitado')),
   created_at timestamptz DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at timestamptz DEFAULT timezone('utc'::text, now()) NOT NULL

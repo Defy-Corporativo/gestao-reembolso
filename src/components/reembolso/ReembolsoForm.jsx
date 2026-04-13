@@ -4,6 +4,7 @@ import { useReembolso } from '../../contexts/ReembolsoContext';
 import { requestService } from '../../services/requestService';
 import { storageService } from '../../services/storageService';
 import { isPdfFile } from '../../services/storageService';
+import { expenseTypeService } from '../../services/expenseTypeService';
 import { X, Camera, Image, FileText, Trash2 } from 'lucide-react';
 import styles from './Reembolso.module.css';
 
@@ -43,7 +44,10 @@ const ReembolsoForm = ({ onClose, onSubmit, editingRequest }) => {
         expenseDate: '',
         amount: '',
         description: '',
+        expenseTypeId: '',
     });
+    // Tipos de despesa disponíveis
+    const [expenseTypes, setExpenseTypes] = useState([]);
     // Comprovantes existentes no storage (modo edição): { storagePath, isPdf, previewUrl }
     const [existingReceipts, setExistingReceipts] = useState([]);
     // Novos arquivos selecionados pelo usuário: { file, isPdf, fileName, previewUrl }
@@ -54,12 +58,18 @@ const ReembolsoForm = ({ onClose, onSubmit, editingRequest }) => {
 
     // Carregar dados da solicitação em modo edição
     useEffect(() => {
+        // Carregar tipos de despesa ativos
+        expenseTypeService.getActiveExpenseTypes()
+            .then(setExpenseTypes)
+            .catch(err => console.error('Erro ao carregar tipos de despesa:', err));
+
         if (!editingRequest) return;
 
         setFormData({
             expenseDate: editingRequest.expense_date || '',
             amount: String(editingRequest.amount || ''),
             description: editingRequest.description || '',
+            expenseTypeId: editingRequest.expense_type_id || '',
         });
 
         // Carregar previews dos comprovantes existentes
@@ -189,6 +199,7 @@ const ReembolsoForm = ({ onClose, onSubmit, editingRequest }) => {
                     expenseDate: formData.expenseDate,
                     amount: formData.amount,
                     description: formData.description,
+                    expenseTypeId: formData.expenseTypeId || null,
                     existingPaths: existingReceipts.map(r => r.storagePath),
                     newFiles: newFiles.map(nf => nf.file),
                     userName,
@@ -200,6 +211,7 @@ const ReembolsoForm = ({ onClose, onSubmit, editingRequest }) => {
                     expenseDate: formData.expenseDate,
                     amount: formData.amount,
                     description: formData.description,
+                    expenseTypeId: formData.expenseTypeId || null,
                     receiptFiles: newFiles.map(nf => nf.file),
                     userName,
                 });
@@ -248,6 +260,22 @@ const ReembolsoForm = ({ onClose, onSubmit, editingRequest }) => {
                             max={new Date().toISOString().split('T')[0]}
                         />
                     </div>
+
+                    {expenseTypes.length > 0 && (
+                        <div className="input-group">
+                            <label className="label">Tipo de Despesa</label>
+                            <select
+                                className="input"
+                                value={formData.expenseTypeId}
+                                onChange={e => handleChange('expenseTypeId', e.target.value)}
+                            >
+                                <option value="">Selecione...</option>
+                                {expenseTypes.map(et => (
+                                    <option key={et.id} value={et.id}>{et.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
 
                     <div className="input-group">
                         <label className="label">Valor (R$) *</label>

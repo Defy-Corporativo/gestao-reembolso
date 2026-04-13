@@ -255,6 +255,7 @@ const GestaoFinanceira = () => {
                                                 <th>Data</th>
                                                 <th>Descrição</th>
                                                 <th style={{ textAlign: 'right' }}>Valor</th>
+                                                <th>Tipo</th>
                                                 <th style={{ textAlign: 'center', width: '90px' }}>Comprov.</th>
                                             </tr>
                                         </thead>
@@ -271,6 +272,7 @@ const GestaoFinanceira = () => {
                                                     <td>{formatDate(req.expense_date)}</td>
                                                     <td>{req.description}</td>
                                                     <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(req.amount)}</td>
+                                                    <td style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{req.rebl_expense_types?.name || '—'}</td>
                                                     <td style={{ textAlign: 'center' }}>
                                                         {(() => {
                                                             let paths = [];

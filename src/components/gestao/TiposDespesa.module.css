@@ -1,0 +1,125 @@
+.pageWrapper { width: 100%; max-width: 700px; margin: 0 auto; }
+
+.addBar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.addBar input { flex: 1; }
+
+.errorMsg {
+    padding: 12px;
+    background: #FEE2E2;
+    color: #991B1B;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.typeList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.typeCard {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color-light);
+    border-radius: var(--border-radius-md);
+    padding: 14px 16px;
+    transition: all var(--transition-base);
+}
+
+.typeCard:hover {
+    box-shadow: var(--shadow-sm);
+}
+
+.typeInactive {
+    opacity: 0.55;
+}
+
+.typeRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.typeName {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.typeActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.inactiveBadge {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #991B1B;
+    background: #FEE2E2;
+    padding: 2px 8px;
+    border-radius: 20px;
+}
+
+.iconBtn {
+    background: none;
+    border: 1px solid var(--border-color-light);
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all var(--transition-base);
+    padding: 0;
+}
+
+.iconBtn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    transform: scale(1.08);
+}
+
+.toggleBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    transition: all var(--transition-base);
+}
+
+.toggleActive { color: #10B981; }
+.toggleInactive { color: var(--text-tertiary); }
+
+.toggleBtn:hover { transform: scale(1.15); }
+
+.editRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.editRow input { flex: 1; }
+
+.emptyState { text-align: center; padding: 48px 24px; color: var(--text-tertiary); }
+.emptyIcon { width: 64px; height: 64px; background: var(--bg-hover); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: var(--text-tertiary); }
+.emptyState h3 { font-size: 18px; font-weight: 600; color: var(--text-secondary); margin: 0 0 8px; }
+.emptyState p { font-size: 14px; margin: 0; }
+
+@media (max-width: 768px) {
+    .pageWrapper { max-width: 100%; }
+    .addBar { flex-direction: column; }
+}

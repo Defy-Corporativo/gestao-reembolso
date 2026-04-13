@@ -299,6 +299,14 @@ CREATE TABLE public.rebl_cycles (
   CONSTRAINT rebl_cycles_pkey PRIMARY KEY (id),
   CONSTRAINT rebl_cycles_closed_by_fkey FOREIGN KEY (closed_by) REFERENCES public.pepl_responsibles(id)
 );
+CREATE TABLE public.rebl_expense_types (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  name text NOT NULL UNIQUE,
+  is_active boolean NOT NULL DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT rebl_expense_types_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.rebl_requests (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   cycle_id uuid NOT NULL,
@@ -307,6 +315,7 @@ CREATE TABLE public.rebl_requests (
   amount numeric(12,2) NOT NULL,
   description text NOT NULL,
   receipt_paths text NOT NULL DEFAULT '[]',
+  expense_type_id uuid,
   status text NOT NULL DEFAULT 'pendente'::text CHECK (status = ANY (ARRAY['pendente'::text, 'aprovado'::text, 'reembolsado'::text, 'rejeitado'::text])),
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Receipt, History, Wallet, Menu, ChevronLeft, CreditCard } from 'lucide-react';
+import { Receipt, History, Wallet, Menu, ChevronLeft, CreditCard, Tag } from 'lucide-react';
 import { useReembolso } from '../../contexts/ReembolsoContext';
 import styles from './Layout.module.css';
 
@@ -86,6 +86,7 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
                         {!isCollapsed && <span>Meus Pagamentos</span>}
                     </NavLink>
                     {isExecutivoFinanceiro && (
+                        <>
                         <NavLink
                             to="/gestao"
                             className={({ isActive }) => `${styles.navItem} ${styles.navItemGestao} ${isActive ? styles.active : ''}`}
@@ -100,6 +101,18 @@ const Sidebar = ({ isCollapsed, onToggle }) => {
                             </svg>
                             {!isCollapsed && <span>Gestão Financeira</span>}
                         </NavLink>
+                        <NavLink
+                            to="/tipos-despesa"
+                            className={({ isActive }) => `${styles.navItem} ${styles.navItemGestao} ${isActive ? styles.active : ''}`}
+                            title="Tipos de Despesa"
+                            onClick={() => {
+                                window.innerWidth < 768 && onToggle();
+                            }}
+                        >
+                            <Tag size={20} />
+                            {!isCollapsed && <span>Tipos de Despesa</span>}
+                        </NavLink>
+                        </>
                     )}
                 </nav>
             </aside>
